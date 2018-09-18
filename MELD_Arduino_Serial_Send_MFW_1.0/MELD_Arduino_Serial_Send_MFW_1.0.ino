@@ -2,25 +2,47 @@
     /* 
       Encoder Index:
       - Encoder: X
-      -PushButton: A
+      - PushButton: A
       
       Cherry Index:
       - Button #1: B
+      - Button #2: C
+      - Button #3: D
+      - Button #4: E
+      - Button #5: F
       */
 //----------------------------------------
     
   static int encoderL = 0; //number of Encoder Left GPIO
   static int encoderR = 1; //number of Encoder Right GPIO
   
-  const int A = 4; //number of Encoder Button GPIO
-  const int B = 5; //number of Cherry Button #1 GPIO
+  const int A = 2; //number of Encoder Button GPIO
+  const int B = 3; //number of Cherry Button #1 GPIO
+  const int C = 5;  //number of Cherry Button #2 GPIO
+  const int D = 6;  //number of Cherry Button #3 GPIO
+  const int E = 18;  //number of Cherry Button #4 GPIO
+  const int F = 20; //number of Cherry Button #5 GPIO
   
   int buttonStateA = LOW; //variables for button status'
   int buttonStateB = LOW;
+  int buttonStateC = LOW;
+  int buttonStateD = LOW;
+  int buttonStateE = LOW;
+  int buttonStateF = LOW;
+
   int lastButtonStateA = LOW; //variables for last button status'
-  int lastButtonStateB = LOW; 
+  int lastButtonStateB = LOW;
+  int lastButtonStateC = LOW;
+  int lastButtonStateD = LOW;
+  int lastButtonStateE = LOW;
+  int lastButtonStateF = LOW;
+
   boolean isToggledA = false; //variables for toggled button
   boolean isToggledB = false;
+  boolean isToggledC = false;
+  boolean isToggledD = false;
+  boolean isToggledE = false;
+  boolean isToggledF = false;
   
   long debounceDelay = 150; //the debounce time
   long lastDebounceTime = 0; //the last time output was toggled
@@ -38,6 +60,10 @@ void setup(){
   pinMode(encoderR, INPUT_PULLUP);
   pinMode(A, INPUT); //initialise as inputs
   pinMode(B, INPUT);
+  pinMode(C, INPUT);
+  pinMode(D, INPUT);
+  pinMode(E, INPUT);
+  pinMode(F, INPUT);
   
   attachInterrupt(2, PinA, RISING); //set interrupts, looking for rising edge signals
   attachInterrupt(3, PinB, RISING);
@@ -78,30 +104,73 @@ void PinB(){
 void loop(){
   buttonStateA = digitalRead(A); //read state of buttons
   buttonStateB = digitalRead(B);
+  buttonStateC = digitalRead(C);
+  buttonStateD = digitalRead(D);
+  buttonStateE = digitalRead(E);
+  buttonStateF = digitalRead(F);
   
   if((millis() - lastDebounceTime) > debounceDelay){ //filter bounce with time delay
      if(buttonStateA == HIGH && buttonStateA != lastButtonStateA){ //continue if buttonState is HIGH & different to the last state
        isToggledA = !isToggledA; //change state of isToggled
        lastDebounceTime = millis(); //set the current time 
-     }
-     
+     } 
      if(buttonStateB == HIGH && buttonStateB != lastButtonStateB){
        isToggledB = !isToggledB;
        lastDebounceTime = millis(); 
+     }     
+     if(buttonStateC == HIGH && buttonStateC != lastButtonStateC){
+       isToggledC = !isToggledC;
+       lastDebounceTime = millis(); 
+     } 
+     if(buttonStateD == HIGH && buttonStateD != lastButtonStateD){
+       isToggledD = !isToggledD;
+       lastDebounceTime = millis(); 
+     }  
+     if(buttonStateE == HIGH && buttonStateE != lastButtonStateE){
+       isToggledE = !isToggledE;
+       lastDebounceTime = millis(); 
+     } 
+     if(buttonStateF == HIGH && buttonStateF != lastButtonStateF){
+       isToggledF = !isToggledF;
+       lastDebounceTime = millis(); 
      }
      
-     if(buttonStateA != lastButtonStateA || buttonStateB != lastButtonStateB || encoderPos != oldEncPos){ //continue only the state changes
-       Serial.print("["); //print special character to signal start of new input stream
-       Serial.print("X"); //print data identifier
-       Serial.print(encoderPos); //print data value
-       //Serial.print(" "); 
+     if(encoderPos != oldEncPos){
+       Serial.print("X");
+       Serial.print(encoderPos);
+       Serial.println("]"); 
+      }
+      if(buttonStateA != lastButtonStateA){
        Serial.print("A");
        Serial.print(isToggledA);
-       //Serial.print(" ");
+       Serial.println("]"); 
+      }
+      if(buttonStateB != lastButtonStateB){
        Serial.print("B");
        Serial.print(isToggledB);
-       Serial.println("]"); //print special character to signal end of input stream
-     }
+       Serial.println("]"); 
+      }
+      if(buttonStateC != lastButtonStateC){
+       Serial.print("C");
+       Serial.print(isToggledC);
+       Serial.println("]"); 
+      }
+      if(buttonStateD != lastButtonStateD){
+       Serial.print("D");
+       Serial.print(isToggledD);
+       Serial.println("]"); 
+      }
+      if(buttonStateE != lastButtonStateE){
+       Serial.print("E");
+       Serial.print(isToggledE);
+       Serial.println("]"); 
+      }
+      if(buttonStateF != lastButtonStateF){
+       Serial.print("F");
+       Serial.print(isToggledF);
+       Serial.println("]"); 
+      }
+     
      
      if(oldEncPos != encoderPos){
        oldEncPos = encoderPos;
@@ -109,5 +178,9 @@ void loop(){
      
      lastButtonStateA = buttonStateA; //assign the last state to the current
      lastButtonStateB = buttonStateB;
+     lastButtonStateC = buttonStateC;
+     lastButtonStateD = buttonStateD;
+     lastButtonStateE = buttonStateE;
+     lastButtonStateF = buttonStateF;
   }
 }
