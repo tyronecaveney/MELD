@@ -109,70 +109,55 @@ void loop(){
   buttonStateE = digitalRead(E);
   buttonStateF = digitalRead(F);
   
-  if((millis() - lastDebounceTime) > debounceDelay){ //filter bounce with time delay
-     if(buttonStateA == HIGH && buttonStateA != lastButtonStateA){ //continue if buttonState is HIGH & different to the last state
-       isToggledA = !isToggledA; //change state of isToggled
+   if((millis() - lastDebounceTime) > debounceDelay){ //filter bounce with time delay
+     if(buttonStateA != lastButtonStateA){ //continue if buttonState is HIGH & different to the last state
+       Serial.print("A");
+       Serial.print(buttonStateA);
+       Serial.println("]");
        lastDebounceTime = millis(); //set the current time 
-     } 
+     }
      if(buttonStateB == HIGH && buttonStateB != lastButtonStateB){
        isToggledB = !isToggledB;
+       Serial.print("B");
+       Serial.print(isToggledB);
+       Serial.println("]");
        lastDebounceTime = millis(); 
-     }     
-     if(buttonStateC == HIGH && buttonStateC != lastButtonStateC){
-       isToggledC = !isToggledC;
+     } 
+     if(buttonStateC != lastButtonStateC){
+       Serial.print("C");
+       Serial.print(buttonStateC);
+       Serial.println("]");
        lastDebounceTime = millis(); 
      } 
      if(buttonStateD == HIGH && buttonStateD != lastButtonStateD){
        isToggledD = !isToggledD;
+       Serial.print("D");
+       Serial.print(isToggledD);
+       Serial.println("]");
        lastDebounceTime = millis(); 
      }  
      if(buttonStateE == HIGH && buttonStateE != lastButtonStateE){
        isToggledE = !isToggledE;
+       Serial.print("E");
+       Serial.print(isToggledE);
+       Serial.println("]");
        lastDebounceTime = millis(); 
      } 
      if(buttonStateF == HIGH && buttonStateF != lastButtonStateF){
        isToggledF = !isToggledF;
+       Serial.print("F");
+       Serial.print(isToggledF);
+       Serial.println("]");
        lastDebounceTime = millis(); 
      }
-     
-     if(encoderPos != oldEncPos){
+
+      if(encoderPos != oldEncPos){
        Serial.print("X");
        Serial.print(encoderPos);
        Serial.println("]"); 
       }
-      if(buttonStateA != lastButtonStateA){
-       Serial.print("A");
-       Serial.print(isToggledA);
-       Serial.println("]"); 
-      }
-      if(buttonStateB != lastButtonStateB){
-       Serial.print("B");
-       Serial.print(isToggledB);
-       Serial.println("]"); 
-      }
-      if(buttonStateC != lastButtonStateC){
-       Serial.print("C");
-       Serial.print(isToggledC);
-       Serial.println("]"); 
-      }
-      if(buttonStateD != lastButtonStateD){
-       Serial.print("D");
-       Serial.print(isToggledD);
-       Serial.println("]"); 
-      }
-      if(buttonStateE != lastButtonStateE){
-       Serial.print("E");
-       Serial.print(isToggledE);
-       Serial.println("]"); 
-      }
-      if(buttonStateF != lastButtonStateF){
-       Serial.print("F");
-       Serial.print(isToggledF);
-       Serial.println("]"); 
-      }
-     
-     
-     if(oldEncPos != encoderPos){
+        
+       if(oldEncPos != encoderPos){
        oldEncPos = encoderPos;
      }
      
