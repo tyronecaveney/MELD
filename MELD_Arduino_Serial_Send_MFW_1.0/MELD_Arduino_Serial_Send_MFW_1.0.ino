@@ -129,10 +129,9 @@ void loop(){
        Serial.println("]");
        lastDebounceTime = millis(); 
      } 
-     if(buttonStateD == HIGH && buttonStateD != lastButtonStateD){
-       isToggledD = !isToggledD;
+     if(buttonStateD!= lastButtonStateD){
        Serial.print("D");
-       Serial.print(isToggledD);
+       Serial.print(buttonstateD);
        Serial.println("]");
        lastDebounceTime = millis(); 
      }  
