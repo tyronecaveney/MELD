@@ -35,9 +35,8 @@ class MainHostWindow::PluginListWindow  : public DocumentWindow //RIGHT CLICK WI
 {
 public:
     PluginListWindow (MainHostWindow& mw, AudioPluginFormatManager& pluginFormatManager)
-        : DocumentWindow ("Available Plugins",
-                          LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
-                          DocumentWindow::minimiseButton | DocumentWindow::closeButton),
+    : DocumentWindow ("Available Plugins", Colours::black , DocumentWindow::minimiseButton | DocumentWindow::closeButton),
+    
           owner (mw)
     
     {
@@ -51,13 +50,19 @@ public:
 
         
         
-        setResizable (true, false);
-        setResizeLimits (300, 400, 800, 1500);
-        setTopLeftPosition (60, 60);
-        //ResizableWindow::setFullScreen(true);
+        setResizable (false, false);
+        setResizeLimits (1000, 700, 1000, 700);
+        //setTopRightPosition(60, 60);
+        setDraggable(false);
+        setAlpha(0.7f);
+        setUsingNativeTitleBar(false);
+        setTitleBarHeight(0);
+        //setCentreRelative(0.5f, 0.5f);
 
         restoreWindowStateFromString (getAppProperties().getUserSettings()->getValue ("listWindowPos"));
         setVisible (true);
+        setBroughtToFrontOnMouseClick (true);
+        
     }
 
     ~PluginListWindow()
@@ -71,6 +76,7 @@ public:
         owner.pluginListWindow = nullptr;
     }
 
+    
 private:
     MainHostWindow& owner;
     
@@ -80,8 +86,7 @@ private:
 
 //==============================================================================
 MainHostWindow::MainHostWindow()
-    : DocumentWindow (JUCEApplication::getInstance()->getApplicationName(),
-                      LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
+: DocumentWindow (JUCEApplication::getInstance()->getApplicationName(), Colours::white,
                       DocumentWindow::allButtons)
 {
     
@@ -93,10 +98,8 @@ MainHostWindow::MainHostWindow()
 
     deviceManager.initialise (256, 256, savedAudioState, true);
 
-    setResizable (false, false);
+    setResizable (true, false);
     
-    //setResizeLimits (500, 400, 10000, 10000);
-    //centreWithSize (500, 600);
     graphHolder = new GraphDocumentComponent (formatManager, deviceManager);
 
     setContentNonOwned (graphHolder, false);
@@ -115,7 +118,7 @@ MainHostWindow::MainHostWindow()
         knownPluginList.recreateFromXml (*savedPluginList);
 
     pluginSortMethod = (KnownPluginList::SortMethod) getAppProperties().getUserSettings()
-                            ->getIntValue ("pluginSortMethod", KnownPluginList::sortByManufacturer);
+                            ->getIntValue ("pluginSortMethod", KnownPluginList::sortAlphabetically);  //CHANGES SORT METHOD
 
     knownPluginList.addChangeListener (this);
 
@@ -133,6 +136,10 @@ MainHostWindow::MainHostWindow()
    #endif
 
     getCommandManager().setFirstCommandTarget (this);
+    
+    isOpened = false;
+    isLastOpened = false;
+    startTimerHz(60);
     
 }
 
@@ -235,7 +242,6 @@ StringArray MainHostWindow::getMenuBarNames()
     names.add ("File");
     names.add ("Plugins");
     names.add ("Options");
-    names.add ("Windows");
     return names;
 }
 
@@ -277,24 +283,11 @@ PopupMenu MainHostWindow::getMenuForIndex (int topLevelMenuIndex, const String& 
         
         menu.addCommandItem (&getCommandManager(), CommandIDs::showPluginListEditor);
         
-        PopupMenu sortTypeMenu;
-        sortTypeMenu.addItem (200, "List plugins in default order",      true, pluginSortMethod == KnownPluginList::defaultOrder);
-        sortTypeMenu.addItem (201, "List plugins in alphabetical order", true, pluginSortMethod == KnownPluginList::sortAlphabetically);
-        sortTypeMenu.addItem (202, "List plugins by category",           true, pluginSortMethod == KnownPluginList::sortByCategory);
-        sortTypeMenu.addItem (203, "List plugins by manufacturer",       true, pluginSortMethod == KnownPluginList::sortByManufacturer);
-        sortTypeMenu.addItem (204, "List plugins based on the directory structure", true, pluginSortMethod == KnownPluginList::sortByFileSystemLocation);
-        menu.addSubMenu ("Plugin menu type", sortTypeMenu);
-        
         menu.addSeparator();
         menu.addCommandItem (&getCommandManager(), CommandIDs::showAudioSettings);
-        menu.addCommandItem (&getCommandManager(), CommandIDs::toggleDoublePrecision);
         
         menu.addSeparator();
         menu.addCommandItem (&getCommandManager(), CommandIDs::aboutBox);
-    }
-    else if (topLevelMenuIndex == 3)
-    {
-        menu.addCommandItem (&getCommandManager(), CommandIDs::allWindowsForward);
     }
     
     return menu;
@@ -356,17 +349,19 @@ void MainHostWindow::addPluginsToMenu (PopupMenu& m) const
 {
     if (graphHolder != nullptr)
     {
-        int i = 0;
-
-        for (auto* t : internalTypes)
-            m.addItem (++i, t->name + " (" + t->pluginFormatName + ")",
-                       graphHolder->graph->getNodeForName (t->name) == nullptr);
+//        int i = 0;
+//
+//        for (auto* t : internalTypes)
+//            m.addItem (++i, t->name + " (" + t->pluginFormatName + ")",
+//                       graphHolder->graph->getNodeForName (t->name) == nullptr);
     }
 
     m.addSeparator();
 
     knownPluginList.addToMenu (m, pluginSortMethod);
+
 }
+
 
 const PluginDescription* MainHostWindow::getChosenType (const int menuID) const
 {
@@ -429,12 +424,12 @@ void MainHostWindow::getCommandInfo (const CommandID commandID, ApplicationComma
 
     case CommandIDs::showPluginListEditor:
         result.setInfo ("Edit the list of available plug-Ins...", String(), category, 0);
-        result.addDefaultKeypress ('p', ModifierKeys::commandModifier);
+        result.addDefaultKeypress ('p', ModifierKeys::commandModifier); //CODE NEEDED FOR PLUGIN WINDOW TO OPEN
         break;
 
     case CommandIDs::showAudioSettings:
         result.setInfo ("Change the audio device settings", String(), category, 0);
-        result.addDefaultKeypress ('a', ModifierKeys::commandModifier);
+        result.addDefaultKeypress ('a', ModifierKeys::commandModifier); //CODE NEEDED FOR AUDIO UNITS TO OPEN
         break;
 
     case CommandIDs::toggleDoublePrecision:
@@ -541,11 +536,12 @@ void MainHostWindow::showAudioSettings()
     o.content.setNonOwned (&audioSettingsComp);
     o.dialogTitle                   = "Audio Settings";
     o.componentToCentreAround       = this;
-    o.dialogBackgroundColour        = getLookAndFeel().findColour (ResizableWindow::backgroundColourId);
+    o.dialogBackgroundColour        = getLookAndFeel().findColour (backgroundColourId);
     o.escapeKeyTriggersCloseButton  = true;
-    o.useNativeTitleBar             = false;
+    o.useNativeTitleBar             = true; 
     o.resizable                     = false;
     
+
 
     o.runModal();
 
@@ -612,4 +608,18 @@ void MainHostWindow::updatePrecisionMenuItem (ApplicationCommandInfo& info)
 {
     info.setInfo ("Double floating point precision rendering", String(), "General", 0);
     info.setTicked (isDoublePrecisionProcessing());
+}
+
+void MainHostWindow::timerCallback()
+{
+    if (graphHolder->graphPanel->openUp != isOpened)
+    {
+        if (pluginListWindow == nullptr)
+        {
+            pluginListWindow = new PluginListWindow (*this, formatManager);
+            pluginListWindow->toFront (true);
+            showAudioSettings();
+        }
+        
+    }
 }
