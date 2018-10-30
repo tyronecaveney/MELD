@@ -156,11 +156,13 @@ struct GraphEditorPanel::FilterComponent   : public Component
         {
             graph.setChangedFlag (true);
         }
-        else if (e.getNumberOfClicks() == 2)
+        else if (e.getNumberOfClicks() == 2)                //GRAPH DOUBLE CLICK
         {
-            if (auto f = graph.graph.getNodeForId (pluginID))
+            std::cout << pluginID << std::endl;
+           if (auto f = graph.graph.getNodeForId (pluginID))
                 if (auto* w = graph.getOrCreateWindowFor (f, PluginWindow::Type::normal))
                     w->toFront (true);
+            
         }
     }
 
@@ -536,35 +538,69 @@ struct GraphEditorPanel::ConnectorComponent   : public Component,
 };
 
 
-//==============================================================================
-/*
+////////////////////////////////////////////////////////////////
+//                                                            //
+//                                                            //
+//                                                            //
+//                                                            //
+//                                                            //
+//                          G U I                             //
+//                                                            //
+//                                                            //
+//                                                            //
+//                                                            //
+//                                                            //
+////////////////////////////////////////////////////////////////
  
- 
- 
- 
- 
-                    ALL GUI STUFF HERE ?
- 
- 
- 
- 
- 
- 
- */
+
 GraphEditorPanel::GraphEditorPanel (FilterGraph& g)  : graph (g)
 {
     graph.addChangeListener (this);
     setOpaque (true);
     
-    for(int i = 0; i < 18; i++)
+    openUp = false;
+    selfieTime = false;
+    
+    for(int i = 0; i < 4; i++)     // array storing the 18 button screen
     {
-        buttons[i].addListener(this);
-        addAndMakeVisible(&buttons[i]);
-        buttons[i].setColour(0x1000100, Colours::white);
-        buttons[i].setColour(0x1000101, Colours::lemonchiffon);
-        buttons[i].setClickingTogglesState(true);
+        defaultButtons[i].addListener(this);
+        defaultButtons[i].setClickingTogglesState(true);
+        
+       // defaultButtons[i].setImages(false, true, true, PLU, 1.0f, Colours::transparentBlack, PLH, 1.0f, Colours::transparentBlack, PLH, 1.0f, Colours::transparentBlack);
+
+        addAndMakeVisible(&buttonLabels[i]);
+        buttonLabels[i].setColour(0x1000281, juce::Colours::black);
+        buttonLabels[i].setJustificationType(Justification::centred);
+        buttonLabels[i].setFont(Font("Helvetica", 15, 2+1));
+        
+        pluginPointer[i] = nullptr;
+        buttonFilled[i] = false;
     }
     
+    logo.addListener(this);
+    logo.setClickingTogglesState(true);
+    addAndMakeVisible(&logo);
+    logo.setImages(false, true, true, MeldUp, 1.0f, Colours::transparentBlack, MeldHover, 1.0f, Colours::transparentBlack, MeldUp, 1.0f, Colours::transparentBlack);
+    
+    addAndMakeVisible(&defaultButtons[0]);
+    
+    addAndMakeVisible(&maxButton);
+    maxButton.addListener(this);
+    maxButton.setButtonText("18");
+    maxButton.setColour(0x1000100, Colours::transparentBlack);
+    maxButton.setColour(0x1000101, Colours::lightgrey);
+    maxButton.setClickingTogglesState(true);
+    
+    addAndMakeVisible(&lightMode);
+    lightMode.addListener(this);
+    lightMode.setButtonText("popup");
+    lightMode.setColour(0x1000100, Colours::transparentBlack);
+    lightMode.setColour(0x1000101, Colours::lightgrey);
+    lightMode.setClickingTogglesState(true);
+    light = true;
+    dark = false;
+
+    currentVST = 0;
 }
 
 GraphEditorPanel::~GraphEditorPanel()
@@ -579,59 +615,193 @@ void GraphEditorPanel::paint (Graphics& g)
 {
     g.fillAll (Colours::white);
     auto area = getLocalBounds();
-    //g.drawImage(background, 0, 0, area.getWidth(), area.getHeight(), 0, 0, 2560, 1600);
     
-    FlexBox fb;
-    fb.flexWrap = FlexBox::Wrap::wrap;
-    fb.justifyContent = FlexBox::JustifyContent::center;
-    fb.alignContent = FlexBox::AlignContent::center;
-    
-    for(int i = 0; i < 18; i++)
+    if (light == true && dark == false)
     {
-        fb.items.add((FlexItem(buttons[i]).withMinWidth((1*getLocalBounds().getWidth()/8)-20.0f).withMinHeight((1*getLocalBounds().getWidth()/8)-20.0f)).withMargin(10.0f));
-        // to change size of buttons, change 1/8 to a SMALLER decimal, i.e., 1/16, 1/32
+        Image background = ImageCache::getFromMemory (BinaryData::bglight_png, BinaryData::bglight_pngSize);
+        g.drawImageAt (background, 0, 0);
+        repaint();
+        for (int i = 0; i < 4; i++)
+        {
+            defaultButtons[i].setImages(false, true, true, PLU, 1.0f, Colours::transparentBlack, PLH, 1.0f, Colours::transparentBlack, PLD, 1.0f, Colours::transparentBlack);
+            buttonLabels[i].setColour(0x1000281, juce::Colours::black);
+            if (buttonFilled[i] == true)
+            {
+                defaultButtons[i].setImages(false, true, true, NPLU, 1.0f, Colours::transparentBlack, NPLH, 1.0f, Colours::transparentBlack, NPLD, 1.0f, Colours::transparentBlack);
+            }
+        }
+        
     }
     
-    fb.performLayout(Rectangle<float>(getWidth()/8.0f, getHeight()/8.0f, getWidth()*3.0/4.0f, getHeight()*3.0f/4.0f));
+    if (dark == true && light == false)
+    {
+        Image background = ImageCache::getFromMemory (BinaryData::bgdark_png, BinaryData::bgdark_pngSize);
+        g.drawImageAt (background, 0, 0);
+        repaint();
+        for (int i = 0; i < 4; i++)
+        {
+            defaultButtons[i].setImages(false, true, true, PDU, 1.0f, Colours::transparentBlack, PDH, 1.0f, Colours::transparentBlack, PDD, 1.0f, Colours::transparentBlack);
+            buttonLabels[i].setColour(0x1000281, juce::Colours::white);
+            if (buttonFilled[i] == true)
+            {
+                defaultButtons[i].setImages(false, true, true, NPDU, 1.0f, Colours::transparentBlack, NPDH, 1.0f, Colours::transparentBlack, NPDD, 1.0f, Colours::transparentBlack);
+            }
+        }
+        
+    }
+    
+    if (selfieTime == true)
+    {
+        g.drawImageAt(selfie, getWidth() / 3, 200);
+    }
+    
+    FlexBox fbButtons;
+    fbButtons.flexWrap = FlexBox::Wrap::wrap;
+    fbButtons.justifyContent = FlexBox::JustifyContent::center;
+    fbButtons.alignContent = FlexBox::AlignContent::center;
+
+    for(int i = 0; i < 4; i++)
+    {
+        fbButtons.items.add((FlexItem(defaultButtons[i]).withMinWidth((9*getLocalBounds().getWidth()/48)-20.0f).withMinHeight((9*getLocalBounds().getWidth()/48)-20.0f)).withMargin(10.0f));
+            // to change size of buttons, change 1/8 to a SMALLER decimal, i.e., 1/16, 1/32
+    }
+      fbButtons.performLayout(Rectangle<float>(getWidth()/16.0f, getHeight()/16.0f, getWidth()*7.0f/8.0f, getHeight()*7.0f/8.0f));
+    
+    FlexBox fbLabels;
+    fbLabels.flexWrap = FlexBox::Wrap::wrap;
+    fbLabels.justifyContent = FlexBox::JustifyContent::center;
+    fbLabels.alignContent = FlexBox::AlignContent::center;
+
+    for(int i = 0; i < 4; i++)
+    {
+        fbLabels.items.add((FlexItem(buttonLabels[i]).withMinWidth((9*getLocalBounds().getWidth()/48)-20.0f).withMinHeight((9*getLocalBounds().getWidth()/48)-20.0f)).withMargin(10.0f));
+    }
+    fbLabels.performLayout(Rectangle<float>(getWidth()/16.0f, getHeight()/16.0f, getWidth()*7.0f/8.0f, getHeight()*7.0f/8.0f));
 }
 
 void GraphEditorPanel::buttonClicked (Button* button) //opens VST when the button is clicked
 {
-        PopupMenu m;
-        
-        if (auto* mainWindow = findParentComponentOfClass<MainHostWindow>())
-        {
-            mainWindow->addPluginsToMenu (m);
-            
-            auto r = m.show();
-            if (auto* desc = mainWindow->getChosenType (r))
-                createNewPlugin(*desc, Point<int>(0, 0)); //creates VST at position 0,0 (Top Left)
-        }
-}
-
-/*
-void GraphEditorPanel::mouseDown (const MouseEvent& e)
-{
-    if (e.mods.isPopupMenu())
+    for(int i = 0; i < 4; i++)
     {
-        PopupMenu m;
-
-        if (auto* mainWindow = findParentComponentOfClass<MainHostWindow>())
+        if (button == &defaultButtons[i])
         {
-            mainWindow->addPluginsToMenu (m);
-
-            auto r = m.show();
-
-            if (auto* desc = mainWindow->getChosenType (r))
-                createNewPlugin (*desc, e.position.toInt());
+            if (buttonFilled[i] == false)
+            {
+                PopupMenu m;
+                //m.getMenu().getItem(2).setChecked(true);
+                if (auto* mainWindow = findParentComponentOfClass<MainHostWindow>())
+                {
+                    mainWindow->addPluginsToMenu (m);
+                    auto r = m.show();
+                    if (auto* desc = mainWindow->getChosenType (r))
+                    {
+                        createNewPlugin(*desc, Point<int>(0, 0)); //creates VST at position 0,0 (Top Left)
+                        buttonFilled[i] = true;
+                    }
+                    m.getNumItems();
+                    DBG(m.getNumItems());
+                }
+            }
         }
     }
+    
+    if (button ==&defaultButtons[0])
+    {
+        addAndMakeVisible(defaultButtons[1]);
+        buttonLabels[0].setText(vstNames[0], dontSendNotification);
+        if (buttonFilled[0] == true)
+        {
+                if (auto f = graph.graph.getNodeForId (3))
+                if (auto* w = graph.getOrCreateWindowFor (f, PluginWindow::Type::normal))
+                w->toFront (true);
+        }
+    }
+
+    if (button ==&defaultButtons[1])
+    {
+        addAndMakeVisible(defaultButtons[2]);
+        buttonLabels[1].setText(vstNames[1], dontSendNotification);
+        if (buttonFilled[1] == true)
+        {
+            if (auto f = graph.graph.getNodeForId (4))
+                if (auto* w = graph.getOrCreateWindowFor (f, PluginWindow::Type::normal))
+                    w->toFront (true);
+        }
+    }
+    
+    if (button ==&defaultButtons[2])
+    {
+        addAndMakeVisible(defaultButtons[3]);
+            buttonLabels[2].setText(vstNames[2], dontSendNotification);
+        if (buttonFilled[2] == true){
+            if (auto f = graph.graph.getNodeForId (5))
+                if (auto* w = graph.getOrCreateWindowFor (f, PluginWindow::Type::normal))
+                    w->toFront (true);
+        }
+
+    }
+    if (button ==&defaultButtons[3])
+    {
+        buttonLabels[3].setText(vstNames[3], dontSendNotification);
+        if (buttonFilled[3] == true){
+            if (auto f = graph.graph.getNodeForId (6))
+                if (auto* w = graph.getOrCreateWindowFor (f, PluginWindow::Type::normal))
+                    w->toFront (true);
+        }
+    }
+    if (button ==&maxButton)
+    {
+        for(int i = 0; i < 4; i++)
+        {
+            addAndMakeVisible(defaultButtons[i]);
+        }
+    }
+    if (button ==&lightMode)
+    {
+        openUp = !openUp;
+    }
+    if (button ==&logo)
+    {
+//        selfieTime = !selfieTime;
+        String about;
+        
+        about << "MELD is the culmination of a three-year degree in Commercial Music Technology." << newLine << newLine << "An amalgam of ‘traditional’ interfaces & new interactive technologies; MELD harnesses the power of VST’s to give music-makers access to their favourite sounds & effects - without the need for a computer." << newLine;
+
+        DialogWindow::LaunchOptions options;
+        {
+        auto* body = new Label();
+        body->setText (about, dontSendNotification);
+        body->setColour (Label::textColourId, Colours::black);
+        body->setJustificationType(Justification::centred);
+        body->setFont(Font("Helvetica", 20, 0));
+        options.content.setOwned (body);
+        }
+        
+        Rectangle<int> area (0, 0, 300, 200);
+
+        options.content->setSize (area.getWidth(), area.getHeight());
+
+        options.dialogTitle                   = "About";
+        options.dialogBackgroundColour        = Colours::transparentBlack;
+        options.escapeKeyTriggersCloseButton  = true;
+        options.useNativeTitleBar             = true;
+        options.resizable                     = false;
+
+        settingsWindow = options.launchAsync();
+
+        if (settingsWindow != nullptr)
+            settingsWindow->centreWithSize (500, 300);
+
+    }
 }
- */
+
+
 
 void GraphEditorPanel::createNewPlugin (const PluginDescription& desc, Point<int> position)
 {
     graph.addPlugin (desc, position.toDouble() / Point<double> ((double) getWidth(), (double) getHeight()));
+    vstNames[currentVST] = desc.descriptiveName;
+    currentVST++;
 }
 
 GraphEditorPanel::FilterComponent* GraphEditorPanel::getComponentForFilter (const uint32 filterID) const
@@ -670,6 +840,11 @@ GraphEditorPanel::PinComponent* GraphEditorPanel::findPinAt (Point<float> pos) c
 void GraphEditorPanel::resized()
 {
     updateComponents();
+
+    maxButton.setBounds(getWidth() - getWidth() + 60, getHeight() - 100, 60, 60);
+   lightMode.setBounds(getWidth() - getWidth() + 220, getHeight() - 100, 60, 60);
+    logo.setBounds(1260, getHeight() - 120, 150, 150);
+    
 }
 
 void GraphEditorPanel::changeListenerCallback (ChangeBroadcaster*)
@@ -698,7 +873,7 @@ void GraphEditorPanel::updateComponents()
         if (getComponentForFilter (f->nodeID) == 0)
         {
             auto* comp = nodes.add (new FilterComponent (*this, f->nodeID));
-           //addAndMakeVisible (comp);
+        //   addAndMakeVisible (comp); //COMMENT OUT
             comp->update();
         }
     }
@@ -708,7 +883,7 @@ void GraphEditorPanel::updateComponents()
         if (getComponentForConnection (c) == 0)
         {
             auto* comp = connectors.add (new ConnectorComponent (*this));
-            //addAndMakeVisible (comp);
+            //addAndMakeVisible (comp); //COMMENT OUR
 
             comp->setInput (c.source);
             comp->setOutput (c.destination);
@@ -730,7 +905,7 @@ void GraphEditorPanel::beginConnectorDrag (AudioProcessorGraph::NodeAndChannel s
     draggingConnector->setInput (source);
     draggingConnector->setOutput (dest);
 
-   // addAndMakeVisible (draggingConnector);
+    //addAndMakeVisible (draggingConnector); //COMMENT OUT
     draggingConnector->toFront (false);
 
     dragConnector (e);
@@ -814,11 +989,12 @@ struct GraphDocumentComponent::TooltipBar   : public Component,
     {
         startTimer (100);
     }
+    
 
     void paint (Graphics& g) override
     {
         g.setFont (Font (getHeight() * 0.7f, Font::bold));
-        g.setColour (Colours::black);
+        g.setColour (Colours::peachpuff);
         g.drawFittedText (tip, 10, 0, getWidth() - 12, getHeight(), Justification::centredLeft, 1);
     }
 
@@ -919,3 +1095,4 @@ bool GraphDocumentComponent::closeAnyOpenPluginWindows()
 {
     return graphPanel->graph.closeAnyOpenPluginWindows();
 }
+
