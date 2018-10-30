@@ -28,8 +28,6 @@
 
 #include "FilterGraph.h"
 #include "GraphEditorPanel.h"
-#include "Wallpaper.h"
-
 
 
 //==============================================================================
@@ -54,7 +52,9 @@ class MainHostWindow    : public DocumentWindow,
                           public MenuBarModel,
                           public ApplicationCommandTarget,
                           public ChangeListener,
-                          public FileDragAndDropTarget
+                          public FileDragAndDropTarget,
+                          public Timer
+           //               public TextButton::Listener
 {
 public:
     //==============================================================================
@@ -76,6 +76,8 @@ public:
 
     StringArray getMenuBarNames() override;
     PopupMenu getMenuForIndex (int topLevelMenuIndex, const String& menuName) override;
+    
+    
     void menuItemSelected (int menuItemID, int topLevelMenuIndex) override;
     ApplicationCommandTarget* getNextCommandTarget() override;
     void getAllCommands (Array<CommandID>&) override;
@@ -87,6 +89,7 @@ public:
     void createPlugin (const PluginDescription&, Point<int> pos);
 
     void addPluginsToMenu (PopupMenu&) const;
+    
     const PluginDescription* getChosenType (int menuID) const;
 
     bool isDoublePrecisionProcessing();
@@ -94,20 +97,39 @@ public:
 
     ScopedPointer<GraphDocumentComponent> graphHolder;
     
+    AudioDeviceManager deviceManager; //private
+    AudioPluginFormatManager formatManager; //private
+    
+    OwnedArray<PluginDescription> internalTypes; //private
+    KnownPluginList knownPluginList; //private
+    KnownPluginList::SortMethod pluginSortMethod; // private
+    
+    class PluginListWindow; //private
+    ScopedPointer<PluginListWindow> pluginListWindow; //private
+    
+    void showAudioSettings(); //private
+    TextButton popup;
+
+
 private:
     //==============================================================================
     
-    AudioDeviceManager deviceManager;
-    AudioPluginFormatManager formatManager;
+   // AudioDeviceManager deviceManager;
+    //AudioPluginFormatManager formatManager;
 
-    OwnedArray<PluginDescription> internalTypes;
-    KnownPluginList knownPluginList;
-    KnownPluginList::SortMethod pluginSortMethod;
+//    OwnedArray<PluginDescription> internalTypes;
+//    KnownPluginList knownPluginList;
+//    KnownPluginList::SortMethod pluginSortMethod;
 
-    class PluginListWindow;
-    ScopedPointer<PluginListWindow> pluginListWindow;
+    
+    //class PluginListWindow; //ORIGINALLY IN PRIVATE
+    //ScopedPointer<PluginListWindow> pluginListWindow; //ORIGINALLY IN PRIVATE
+    
+    //void showAudioSettings();
+    bool isOpened;
+    bool isLastOpened;
+    void timerCallback() override;
 
-    void showAudioSettings();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainHostWindow)
 };
