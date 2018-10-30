@@ -27,6 +27,7 @@
 #pragma once
 
 #include "FilterGraph.h"
+#include "MainHostWindow.h"
 
 
 //==============================================================================
@@ -44,12 +45,13 @@ public:
     void createNewPlugin (const PluginDescription&, Point<int> position);
 
     void paint (Graphics&) override;
-  //  void mouseDown (const MouseEvent&) override;
     void resized() override;
     void changeListenerCallback (ChangeBroadcaster*) override;
     void updateComponents();
     void buttonClicked(Button* button) override;
-    
+    bool buttonFilled[4];
+    int currentVST;
+
     //Image background = ImageCache::getFromMemory(BinaryData::LOAD_PLUGIN_png, BinaryData::LOAD_PLUGIN_pngSize);
 
     //==============================================================================
@@ -61,6 +63,34 @@ public:
 
     //==============================================================================
     FilterGraph& graph;
+    
+    // PLUS LIGHT
+    Image PLU =  ImageCache::getFromMemory (BinaryData::plusup_png, BinaryData::plusup_pngSize);
+    Image PLD =  ImageCache::getFromMemory (BinaryData::plusdown_png, BinaryData::plusdown_pngSize);
+    Image PLH =  ImageCache::getFromMemory (BinaryData::plushover_png, BinaryData::plushover_pngSize);
+    
+    //PLUS DARK
+    Image PDU =  ImageCache::getFromMemory (BinaryData::plusupdark_png, BinaryData::plusupdark_pngSize);
+    Image PDD =  ImageCache::getFromMemory (BinaryData::plusdowndark_png, BinaryData::plusdowndark_pngSize);
+    Image PDH =  ImageCache::getFromMemory (BinaryData::plushoverdark_png, BinaryData::plushoverdark_pngSize);
+    
+    // NOPLUS LIGHT
+    Image NPLU =  ImageCache::getFromMemory (BinaryData::noplusup_png, BinaryData::noplusup_pngSize);
+    Image NPLD =  ImageCache::getFromMemory (BinaryData::noplusdown_png, BinaryData::noplusdown_pngSize);
+    Image NPLH =  ImageCache::getFromMemory (BinaryData::noplushover_png, BinaryData::noplushover_pngSize);
+    
+    // NO PLUS DARK
+    Image NPDU =  ImageCache::getFromMemory (BinaryData::noplusupdark_png, BinaryData::noplusupdark_pngSize);
+    Image NPDD =  ImageCache::getFromMemory (BinaryData::noplusdowndark_png, BinaryData::noplusdowndark_pngSize);
+    Image NPDH =  ImageCache::getFromMemory (BinaryData::noplushoverdark_png, BinaryData::noplushoverdark_pngSize);
+    
+    Image MeldUp = ImageCache::getFromMemory (BinaryData::MELDup_png, BinaryData::MELDup_pngSize);
+    Image MeldHover = ImageCache::getFromMemory (BinaryData::MELDhover_png, BinaryData::MELDhover_pngSize);
+    
+    Image selfie = ImageCache::getFromMemory (BinaryData::selfie_png, BinaryData::selfie_pngSize);
+    
+    bool selfieTime;
+    bool openUp;
 
 private:
     struct FilterComponent;
@@ -77,8 +107,21 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GraphEditorPanel)
     
-    TextButton buttons[18];
-    bool buttonsState[18] = {};
+    ImageButton defaultButtons[4];
+    Label buttonLabels[4];
+    
+    TextButton maxButton;
+    TextButton lightMode;
+    ImageButton logo;
+    
+    bool light;
+    bool dark;
+    bool pluginOn;
+    const PluginDescription *pluginPointer[4];
+    String vstNames[4];
+    int buttonClick;
+    
+    SafePointer<DocumentWindow> settingsWindow;
 };
 
 
@@ -109,15 +152,18 @@ public:
 
     ScopedPointer<GraphEditorPanel> graphPanel;
     ScopedPointer<MidiKeyboardComponent> keyboardComp;
-
+    
+    
 private:
     //==============================================================================
     AudioDeviceManager& deviceManager;
     AudioProcessorPlayer graphPlayer;
     //MidiKeyboardState keyState;
+    
 
     struct TooltipBar;
     ScopedPointer<TooltipBar> statusBar;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GraphDocumentComponent)
 };
+
